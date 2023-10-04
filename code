@@ -1,114 +1,109 @@
 /*
-   -----------------------------------------------------------------------------------
-   Code refactored with assistance from ChatGPT
-   Created by: [Group _2]
-   Date: [2023-10-4]
-   -----------------------------------------------------------------------------------
-   
-   Description:
-   This Arduino code controls a servo motor based on the readings from a light sensor. 
-   When the light sensor reading falls below a specified threshold, the servo motor starts rotating. 
-   The direction of the servo rotation is determined based on the accumulated rotation count. 
-   The servo stops rotating once it completes a certain number of rotations or when the light sensor reading is above the threshold.
-   
-   Key Components:
-   - Servo motor
-   - Light sensor
-   
-   Refactoring Details:
-   This code was refactored with the guidance of ChatGPT, a language model based on the GPT-4 architecture.
-   ChatGPT Version Date: January 2022
-   
-   -----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+Created with the assistance of ChatGPT, an AI model based on the GPT-4 architecture.
+Date: [2023-10-4]
+
+Description:
+This Arduino program is designed to control the rotation of a servo motor based 
+on the readings from a light sensor. If the reading from the sensor falls below 
+a certain threshold, the servo rotates. The servo completes a set number of rotations
+in one direction, pauses, and then rotates in the opposite direction. It will stop
+either after a defined number of rotations or if the light exceeds the threshold.
+
+GPT Details:
+- Architecture: GPT-4
+- ChatGPT Version Date: January 2022
+
+Prompt Used:
+"Comment all code. Also create a header comment that contains a brief description 
+of the code, the GPT architecture, the exact ChatGPT version date, and the prompt used."
+
+-----------------------------------------------------------------------------------
 */
-// Include the Servo library to control the servo motor
+
+// Include the Servo library for servo motor control
 #include <Servo.h>
 
-// Create an instance of the Servo class
+// Declare an instance of the Servo class to control the servo motor
 Servo cntServo1;
 
-// Define the pin where the servo is connected
+// Pin number where the servo motor is connected
 int spin1 = 2;
 
-// Define the pin where the light sensor is connected
+// Pin number where the light sensor is connected
 int lightSensorPin_1 = A0;
 
-// Variable to store the value read from the light sensor
+// Variable to hold the current reading from the light sensor
 int lightSensorVal_1;
 
-// Define the threshold value for the light sensor. Below this, the servo will rotate
+// Threshold value for the light sensor. Servo rotates if the reading goes below this value
 int lightSensorThreshold_1 = 900;
 
-// Variable to keep track of how many rotations the servo has done
+// Counter to keep track of the number of rotations made by the servo motor
 unsigned long rotationCount = 0;
 
-// Variable to store the last time the servo rotated
+// Timestamp to remember the last moment the servo made a rotation
 unsigned long lastRotationTime = 0;
 
-// Define the duration for each rotation (in milliseconds)
+// Duration (in milliseconds) that each rotation of the servo motor should take
 const unsigned long rotationTime = 1000;
 
-// Boolean flag to check if the servo has paused after completing the first set of rotations
+// Flag to determine if the servo has already paused after the first 45 rotations
 bool hasPaused = false;
 
-// Setup function - runs once when the Arduino board starts
+// Initialization function executed once when the program starts
 void setup() {
-  // Initialize the serial communication with a baud rate of 9600
+  // Initialize the serial communication at 9600 baud rate for debugging purposes
   Serial.begin(9600);
 
-  // Attach the servo to the defined pin
+  // Link the servo motor to its associated pin
   cntServo1.attach(spin1);
 }
 
-// Main loop function - runs repeatedly
+// Main loop that continually executes
 void loop() {
-  // Read the value from the light sensor and store it in the variable
+  // Read the current value from the light sensor
   lightSensorVal_1 = analogRead(lightSensorPin_1);
 
-  // Check if the light sensor value is below the defined threshold
+  // Check if the current light sensor reading is below the preset threshold
   if (lightSensorVal_1 < lightSensorThreshold_1) {
 
-    // Rotate the servo clockwise if the rotation count is less than 45
+    // If the servo hasn't rotated 45 times yet, make it rotate clockwise
     if (rotationCount < 45) {
       cntServo1.write(0);
-      // Increment the rotation count after a set duration
+      // After the defined duration, increase the rotation count
       if (millis() - lastRotationTime >= rotationTime) {
         rotationCount++;
         lastRotationTime = millis();
       }
     }
-
-    // Pause the servo for 1.5 seconds after completing 45 rotations
+    // If the servo has completed 45 rotations and hasn't paused yet, pause it
     else if (rotationCount == 45 && !hasPaused) {
-      cntServo1.write(92); 
-      delay(1500); 
+      cntServo1.write(92);
+      delay(1500);
       hasPaused = true;
     }
-
-    // Rotate the servo counter-clockwise between 45 and 90 rotations
+    // After the pause, make the servo rotate counter-clockwise until 90 rotations are complete
     else if (rotationCount >= 45 && rotationCount < 90) {
-      cntServo1.write(180); 
-      // Increment the rotation count after a set duration
+      cntServo1.write(180);
       if (millis() - lastRotationTime >= rotationTime) {
         rotationCount++;
         lastRotationTime = millis();
       }
     }
-
-    // Stop the servo after completing 90 rotations and reset for the next cycle
+    // After 90 rotations are complete, stop the servo, reset counters and flags for next cycle
     else if (rotationCount >= 90) {
-      cntServo1.write(92); 
+      cntServo1.write(92);
       delay(5000);
       rotationCount = 0;
-      hasPaused = false; 
+      hasPaused = false;
     }
   }
-
-  // Stop the servo if the light sensor value is above the threshold
+  // If the light reading exceeds the threshold, stop the servo
   else {
-    cntServo1.write(92); 
+    cntServo1.write(92);
   }
 
-  // Send the light sensor value to the serial monitor for debugging
+  // Print the current light sensor reading to the serial monitor for monitoring and debugging
   Serial.println(lightSensorVal_1);
 }
