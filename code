@@ -21,49 +21,94 @@
    
    -----------------------------------------------------------------------------------
 */
-
+// Include the Servo library to control the servo motor
 #include <Servo.h>
 
+// Create an instance of the Servo class
 Servo cntServo1;
-int spin1 = 2;
-int lightSensorPin_1 = A0;
-int lightSensorVal_1;
-int lightSensorThreshold_1 = 300;
 
+// Define the pin where the servo is connected
+int spin1 = 2;
+
+// Define the pin where the light sensor is connected
+int lightSensorPin_1 = A0;
+
+// Variable to store the value read from the light sensor
+int lightSensorVal_1;
+
+// Define the threshold value for the light sensor. Below this, the servo will rotate
+int lightSensorThreshold_1 = 900;
+
+// Variable to keep track of how many rotations the servo has done
 unsigned long rotationCount = 0;
+
+// Variable to store the last time the servo rotated
 unsigned long lastRotationTime = 0;
+
+// Define the duration for each rotation (in milliseconds)
 const unsigned long rotationTime = 1000;
 
+// Boolean flag to check if the servo has paused after completing the first set of rotations
+bool hasPaused = false;
+
+// Setup function - runs once when the Arduino board starts
 void setup() {
+  // Initialize the serial communication with a baud rate of 9600
   Serial.begin(9600);
+
+  // Attach the servo to the defined pin
   cntServo1.attach(spin1);
 }
 
+// Main loop function - runs repeatedly
 void loop() {
-  lightSensorVal_1 = analogRead(lightSensorPin_1); //read sensor value
+  // Read the value from the light sensor and store it in the variable
+  lightSensorVal_1 = analogRead(lightSensorPin_1);
 
+  // Check if the light sensor value is below the defined threshold
   if (lightSensorVal_1 < lightSensorThreshold_1) {
-    if (rotationCount < 20) {
-      cntServo1.write(110); // counter-clockwise rotation
+
+    // Rotate the servo clockwise if the rotation count is less than 45
+    if (rotationCount < 45) {
+      cntServo1.write(0);
+      // Increment the rotation count after a set duration
       if (millis() - lastRotationTime >= rotationTime) {
         rotationCount++;
         lastRotationTime = millis();
       }
-    } else if (rotationCount >= 20 && rotationCount < 40) {
-      cntServo1.write(0); // reverse direction
-      if (millis() - lastRotationTime >= rotationTime) {
-        rotationCount++;
-        lastRotationTime = millis();
-      }
-    } else if (rotationCount >= 40) {
-      cntServo1.write(92); // stop the servo after it has rolled back
-      delay(5000);
-      rotationCount = 0;  // reset rotation count only after completing both actions
     }
-  } else {
-    cntServo1.write(92); // stop the servo if light sensor value is above threshold
+
+    // Pause the servo for 1.5 seconds after completing 45 rotations
+    else if (rotationCount == 45 && !hasPaused) {
+      cntServo1.write(92); 
+      delay(1500); 
+      hasPaused = true;
+    }
+
+    // Rotate the servo counter-clockwise between 45 and 90 rotations
+    else if (rotationCount >= 45 && rotationCount < 90) {
+      cntServo1.write(180); 
+      // Increment the rotation count after a set duration
+      if (millis() - lastRotationTime >= rotationTime) {
+        rotationCount++;
+        lastRotationTime = millis();
+      }
+    }
+
+    // Stop the servo after completing 90 rotations and reset for the next cycle
+    else if (rotationCount >= 90) {
+      cntServo1.write(92); 
+      delay(5000);
+      rotationCount = 0;
+      hasPaused = false; 
+    }
   }
 
+  // Stop the servo if the light sensor value is above the threshold
+  else {
+    cntServo1.write(92); 
+  }
+
+  // Send the light sensor value to the serial monitor for debugging
   Serial.println(lightSensorVal_1);
 }
-
